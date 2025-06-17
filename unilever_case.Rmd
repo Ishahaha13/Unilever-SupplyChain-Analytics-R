@@ -1,0 +1,133 @@
+---
+title: 'Supply Chain & Consumer Insights: Unilever Case'
+author: "Isha Tanwar"
+date: "2025-03-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(scales)
+```
+
+### Loading Data
+
+```{r load-data}
+data <- read_xlsx("Supply Chain Analytics Uniliver.xlsx", sheet = 1)
+```
+
+### Cleaning and Interpretation
+
+```{r missing-values}
+##Missing Values
+colSums(is.na(data))
+
+##Changing Variable Type
+data$`Product type`<- as.factor(data$`Product type`)
+data$`Supplier name`<- as.factor(data$`Supplier name`)
+data$`Trandportation modes`<- as.factor(data$`Transportation modes`)
+
+##Renaming Variables for Ease
+data <- data %>% rename(ProductType = 'Product type', 
+                        NumSold = 'Number of products sold',
+                        Revenue = 'Revenue generated',
+                        Stock = 'Stock levels',
+                        LeadTime = 'Lead times',
+                        OrderQty = 'Order quantities',
+                        Supplier = 'Supplier name',
+                        ManufLeadTime = 'Manufacturing lead time',
+                        ManufCost = 'Manufacturing costs',
+                        DefectRate = 'Defect rates',
+                        Inspection = 'Inspection results')
+```
+
+### Top Performing Products
+
+```{r top-products}
+top_products <- data %>% group_by(ProductType) %>%
+  summarise(TotalRevenue = sum(Revenue, na.rm = T),
+            TotalSold = sum(NumSold, na.rm = T)) %>%
+  arrange(desc(TotalRevenue))
+top_products
+top_products_graph <- top_products %>% 
+  ggplot(aes(x = fct_reorder(ProductType,TotalRevenue), 
+             y = TotalRevenue)) + 
+  geom_bar(stat = "identity", fill = "light pink") + 
+  coord_flip() + 
+  labs(title = "Total Revenue by Product Type", 
+       x = "Product Type", y = "Revenue") + 
+  scale_y_continuous(labels = dollar_format()) + 
+  theme(panel.background = element_blank()) 
+top_products_graph
+```
+
+### Stock Levels and Sales
+
+```{r stock-sales}
+stock_sales <- data %>% 
+  ggplot(aes(Stock,NumSold)) + 
+  geom_point(color = "tomato") + 
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(title = "Stock Levels vs. Units Sold", 
+       y = "Units Sold") + 
+  theme(panel.background = element_blank())
+stock_sales 
+```
+
+### Supplier Performance
+
+```{r supplier-performance}
+supplier_perf <- data %>%
+  group_by(Supplier) %>%
+  summarise(AvgLeadTime = mean(LeadTime, na.rm = T),
+            AvgDefect = mean(DefectRate,na.rm = T),
+            TotalOrders = n())
+supplier_perf_graph <- supplier_perf %>%
+  ggplot(aes(AvgLeadTime,AvgDefect, size = TotalOrders,
+             color = Supplier)) +
+  geom_point() +
+  labs(title = "Supplier Performance: Lead Time vs. Defect Rate",
+       x = "Average Lead Time", y = "Average Defect Rate") +
+  theme(panel.background = element_blank())
+supplier_perf_graph
+```
+
+### Inspection Results Breakdown
+
+```{r inspection-results}
+inspection_summary <- data %>%
+  group_by(Inspection) %>%
+  summarise(Count = n())
+inspection_summary_graph <- inspection_summary %>%
+  ggplot(aes(Inspection, Count, fill = Inspection)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Product Inspection Results", x = "Result") + 
+  theme(panel.background = element_blank())
+inspection_summary_graph
+```
+
+### Conclusion
+This project offered a focused analysis of Unilever’s supply chain data using R and ggplot2. Through visual exploration of revenue trends, inventory dynamics, supplier performance, and inspection outcomes, the following key insights were drawn:
+
+1. Skincare products generated the highest revenue, indicating a possible concentration of consumer demand or pricing strategy in this segment.
+
+2. The relationship between stock levels and units sold was weak, suggesting potential inefficiencies in inventory planning and demand forecasting.
+
+3. The supplier performance analysis revealed variation in defect rates and lead times, underscoring the importance of identifying and prioritizing high-performing suppliers to ensure quality and timeliness.
+
+4. A significant number of inspection outcomes were marked 'Pending' or 'Failed', highlighting a need for improved quality control mechanisms.
+
+These findings can help companies like Unilever refine their supply chain operations, reduce inefficiencies, and align their processes more closely with business objectives. Overall, the project demonstrates how supply chain analytics can contribute to data-driven decision-making in consumer goods firms.
+
+
+
+
+
+
+
+
+
+
